@@ -2,38 +2,63 @@
 import asyncio
 import random
 import socket
+from typing import Optional, Tuple
 
 # Local imports
 from torrent_parser import parse_torrent
 from tracker_request import get_peers
 
-# Define default timeout values as constants
-DEFAULT_CONNECT_TIMEOUT = 15
-DEFAULT_HANDSHAKE_RESPONSE_TIMEOUT = 20
-DEFAULT_PIECE_RESPONSE_PREFIX_TIMEOUT = 25
-DEFAULT_PIECE_DATA_TIMEOUT = 40
+# Define default attempt/timeout values as constants
+MAX_ATTEMPTS = 2
+CONNECT_TIMEOUT = 15
+HANDSHAKE_RESPONSE_TIMEOUT = 20
 
 
 async def perform_handshake(
-    peer_ip,
-    peer_port,
-    info_hash,
-    connect_timeout=DEFAULT_CONNECT_TIMEOUT,
-    handshake_timeout=DEFAULT_HANDSHAKE_RESPONSE_TIMEOUT,
-):
+    peer_ip: str,
+    peer_port: int,
+    info_hash: bytes,
+    connect_timeout: float = CONNECT_TIMEOUT,
+    handshake_timeout: float = HANDSHAKE_RESPONSE_TIMEOUT,
+) -> Optional[Tuple[asyncio.StreamReader, asyncio.StreamWriter]]:
+    """
+    Performs the BitTorrent handshake with a peer.
+
+    Establishes a TCP connection with the peer, sends the BitTorrent handshake
+    message, and waits for the peer's handshake response. It verifies if the
+    received info hash matches the expected one.
+
+    Args:
+        peer_ip: The IP address of the peer.
+        peer_port: The port number of the peer.
+        info_hash: The 20-byte info hash of the torrent.
+        connect_timeout: Timeout in seconds for establishing the TCP connection.
+                         Defaults to CONNECT_TIMEOUT.
+        handshake_timeout: Timeout in seconds for receiving the peer's handshake
+                           response. Defaults to HANDSHAKE_RESPONSE_TIMEOUT.
+
+    Returns:
+        A tuple containing the asyncio StreamReader and StreamWriter objects
+        representing the established connection if the handshake is successful.
+        Returns None if the connection fails, the handshake times out, or the
+        info hashes do not match.
+    """
+    reader: Optional[asyncio.StreamReader] = None
+    writer: Optional[asyncio.StreamWriter] = None
+    sock: Optional[socket.socket] = None
+
     try:
         print(f"Attempting handshake with {peer_ip}:{peer_port}")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(connect_timeout)  # Set initial connection timeout
-
-        # Wrap the socket connection in an asyncio task
+        sock.settimeout(connect_timeout)
         await asyncio.get_event_loop().sock_connect(sock, (peer_ip, peer_port))
-
-        reader, writer = asyncio.open_connection(sock=sock)  # use the socket
+        reader, writer = await asyncio.open_connection(sock=sock)
 
         protocol_name = b"BitTorrent protocol"
         reserved_bytes = bytes(8)
-        peer_id = b"-PYWORKSHOP-" + "".join(random.choices("0123456789ABCDEF", k=12))
+        peer_id = b"-PYEXERCISE-" + "".join(
+            random.choices("0123456789ABCDEF", k=12)
+        ).encode("ascii")
 
         handshake_msg = (
             len(protocol_name).to_bytes(1, byteorder="big")
@@ -46,28 +71,18 @@ async def perform_handshake(
         writer.write(handshake_msg)
         await writer.drain()
 
-        # Use asyncio.wait_for for the handshake response with its own timeout
-        try:
-            response = await asyncio.wait_for(
-                reader.read(68), timeout=handshake_timeout
-            )
-        except asyncio.TimeoutError:
-            print(
-                f"Handshake timeout: No response from {peer_ip}:{peer_port} after {handshake_timeout} seconds"
-            )
-            writer.close()
-            await writer.wait_closed()
-            return None, None
+        response = await asyncio.wait_for(reader.read(68), timeout=handshake_timeout)
 
-        if response and response[28:48] == info_hash:
+        if response and len(response) == 68 and response[28:48] == info_hash:
             print(f"Handshake successful with {peer_ip}:{peer_port}")
             return reader, writer
         else:
             print(
                 f"Handshake failed with {peer_ip}:{peer_port} - Info hash mismatch or invalid response."
             )
-            writer.close()
-            await writer.wait_closed()
+            if writer:
+                writer.close()
+                await writer.wait_closed()
             return None, None
 
     except ConnectionRefusedError:
@@ -87,80 +102,12 @@ async def perform_handshake(
         print(f"Error connecting to {peer_ip}:{peer_port}: {e}")
         return None, None
     finally:
-        if "writer" in locals() and writer:
+        if writer:
             try:
                 writer.close()
                 await writer.wait_closed()
             except Exception as e:
                 print(f"Error closing writer: {e}")
-
-
-async def request_piece(
-    reader,
-    writer,
-    piece_index,
-    piece_prefix_timeout=DEFAULT_PIECE_RESPONSE_PREFIX_TIMEOUT,
-    piece_data_timeout=DEFAULT_PIECE_DATA_TIMEOUT,
-):
-    """Requests and downloads a piece of data from a peer."""
-    try:
-        print(
-            f"Requesting piece {piece_index} from {reader.get_extra_info('peername')}"
-        )
-        length_prefix = (13).to_bytes(4, byteorder="big")
-        message_id = (6).to_bytes(1, byteorder="big")
-        offset = (0).to_bytes(4, byteorder="big")
-        block_length = (16384).to_bytes(4, byteorder="big")
-
-        request_msg = (
-            length_prefix
-            + message_id
-            + piece_index.to_bytes(4, byteorder="big")
-            + offset
-            + block_length
-        )
-
-        writer.write(request_msg)
-        await writer.drain()
-
-        # Use piece_prefix_timeout
-        try:
-            response_prefix = await asyncio.wait_for(
-                reader.read(4), timeout=piece_prefix_timeout
-            )
-        except asyncio.TimeoutError:
-            print(
-                f"Timeout waiting for piece data prefix from {reader.get_extra_info('peername')} after {piece_prefix_timeout} seconds"
-            )
-            return None
-
-        if not response_prefix:
-            print(
-                f"Peer {reader.get_extra_info('peername')} closed connection prematurely"
-            )
-            return None
-
-        message_length = int.from_bytes(response_prefix, byteorder="big")
-        # Use piece_data_timeout
-        try:
-            piece_data = await asyncio.wait_for(
-                reader.read(message_length - 9), timeout=piece_data_timeout
-            )
-        except asyncio.TimeoutError:
-            print(
-                f"Timeout waiting for full piece data from {reader.get_extra_info('peername')} after {piece_data_timeout} seconds"
-            )
-            return None
-
-        if piece_data:
-            print(
-                f"Downloaded {len(piece_data)} bytes from piece {piece_index} from {reader.get_extra_info('peername')}"
-            )
-        return piece_data
-
-    except Exception as e:
-        print(f"Error requesting/downloading piece: {e}")
-        return None
 
 
 async def main():
@@ -174,54 +121,24 @@ async def main():
     if peer_list:
         random.shuffle(peer_list)
         for peer_ip, peer_port in peer_list:
-            for attempt in range(3):
+            for _ in range(MAX_ATTEMPTS):
                 try:
                     reader, writer = await perform_handshake(
                         peer_ip,
                         peer_port,
                         info_hash,
-                        DEFAULT_CONNECT_TIMEOUT,
-                        DEFAULT_HANDSHAKE_RESPONSE_TIMEOUT,
+                        CONNECT_TIMEOUT,
+                        HANDSHAKE_RESPONSE_TIMEOUT,
                     )
                     if reader and writer:
-                        print(
-                            f"Successfully connected to {peer_ip}:{peer_port} after {attempt + 1} attempts."
-                        )
-                        try:
-                            piece = await request_piece(
-                                reader,
-                                writer,
-                                piece_index=0,
-                                piece_prefix_timeout=DEFAULT_PIECE_RESPONSE_PREFIX_TIMEOUT,
-                                piece_data_timeout=DEFAULT_PIECE_DATA_TIMEOUT,
-                            )
-                            if piece:
-                                print(
-                                    "Successfully downloaded a piece using the integrated client."
-                                )
-                            else:
-                                print(
-                                    f"Failed to download piece from {peer_ip}:{peer_port}"
-                                )
-                        except Exception as e:
-                            print(f"Error during piece request: {e}")
-                        finally:
-                            writer.close()
-                            await writer.wait_closed()
-                        return
+                        print("Handshake completed successfully.")
+                        writer.close()
+                        await writer.wait_closed()
                     else:
-                        print(
-                            f"Handshake failed with {peer_ip}:{peer_port}, attempt {attempt + 1}."
-                        )
-                        await asyncio.sleep(5 * (attempt + 1))
-                except Exception as e:
-                    print(
-                        f"Error connecting to {peer_ip}:{peer_port}, attempt {attempt + 1}: {e}"
-                    )
-                    await asyncio.sleep(5 * (attempt + 1))
-            print("Failed to connect to any peer after multiple attempts.")
-    else:
-        print("No peers found by tracker.")
+                        print("Handshake failed.")
+                except ConnectionRefusedError:
+                    print(f"Connection refused by {peer_ip}:{peer_port}")
+                    return None
 
 
 if __name__ == "__main__":
