@@ -49,10 +49,27 @@ async def perform_handshake(
 
     try:
         print(f"Attempting handshake with {peer_ip}:{peer_port}")
+
+        # Create socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(connect_timeout)
-        await asyncio.get_event_loop().sock_connect(sock, (peer_ip, peer_port))
-        reader, writer = await asyncio.open_connection(sock=sock)
+        print("Socket created.")
+
+        # Attempt connection
+        try:
+            await asyncio.get_event_loop().sock_connect(sock, (peer_ip, peer_port))
+            print("Socket connected.")
+        except OSError as e:
+            print(f"Socket connect error: {e}")
+            return None, None
+
+        # Open asyncio streams
+        try:
+            reader, writer = await asyncio.open_connection(sock=sock)
+            print("asyncio connection opened.")
+        except Exception as e:
+            print(f"asyncio.open_connection error: {e}")
+            return None, None
 
         protocol_name = b"BitTorrent protocol"
         reserved_bytes = bytes(8)
@@ -68,6 +85,7 @@ async def perform_handshake(
             + peer_id
         )
 
+        print(f"Sending handshake: {handshake_msg.hex()}")
         writer.write(handshake_msg)
         await writer.drain()
 
