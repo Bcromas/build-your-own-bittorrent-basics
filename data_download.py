@@ -48,6 +48,18 @@ async def request_piece(
         print(
             f"Requesting piece {piece_index} from {reader.get_extra_info('peername')}"
         )
+        # --- Task 4.1: Construct the 'request' message ---
+        # The 'request' message has the following format:
+        # <length_prefix><message_id><index><begin><length>
+        # - length_prefix: 4 bytes, integer, big-endian. The length of the remaining payload (13).
+        # - message_id: 1 byte, integer. The message ID for 'request' is 6.
+        # - index: 4 bytes, integer, big-endian. The index of the piece being requested.
+        # - begin: 4 bytes, integer, big-endian. The starting offset within the piece (always 0 for simplicity).
+        # - length: 4 bytes, integer, big-endian. The length of the block being requested (16384 for simplicity).
+        # Construct the 'request_msg' by concatenating these components.
+        # Use .to_bytes(4, byteorder='big') to convert integers to bytes.
+        # Assign the resulting bytes object to the 'request_msg' variable.
+
         length_prefix = (13).to_bytes(4, byteorder="big")
         message_id = (6).to_bytes(1, byteorder="big")
         offset = (0).to_bytes(4, byteorder="big")
@@ -66,6 +78,11 @@ async def request_piece(
 
         # Use piece_prefix_timeout
         try:
+            # --- Task 4.2: Read the 'piece' message prefix ---
+            # The 'piece' message starts with a 4-byte length prefix,
+            # followed by the message ID (7), the piece index, and the begin offset.
+            # Read the first 4 bytes from the reader to get the length prefix.
+            # Assign the result to 'response_prefix'.
             response_prefix = await asyncio.wait_for(
                 reader.read(4), timeout=piece_prefix_timeout
             )
@@ -81,9 +98,14 @@ async def request_piece(
             )
             return None
 
+        # Convert the 4-byte prefix to an integer to get the message length.
         message_length = int.from_bytes(response_prefix, byteorder="big")
         # Use piece_data_timeout
         try:
+            # --- Task 4.3: Read the piece data ---
+            # Read the remaining bytes of the 'piece' message, which is the actual piece data.
+            # The length of the piece data is 'message_length - 9' (1 for message ID, 4 for piece index, 4 for begin offset).
+            # Read 'message_length - 9' bytes from the reader and assign the result to 'piece_data'.
             piece_data = await asyncio.wait_for(
                 reader.read(message_length - 9), timeout=piece_data_timeout
             )
