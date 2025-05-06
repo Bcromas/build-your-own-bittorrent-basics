@@ -28,26 +28,28 @@ def parse_torrent(file_path: str) -> Tuple[Optional[str], Optional[bytes]]:
         # --- Task 1.1: Extract the 'info' dictionary ---
         # The 'info' dictionary contains metadata about the torrent's files.
         # Assign the decoded value associated with the key 'b"info"' from 'torrent_data' to the variable 'info_dict'.
-        info_dict = torrent_data.get(b"info")
+        info_dict = None  # YOUR CODE HERE
 
         if info_dict:
             # --- Task 1.2: Calculate the info hash ---
             # The info hash is the SHA1 hash of the bencoded info dictionary.
             # Bencode the 'info_dict' using 'bencodepy.encode()'.
+            bencoded_info = None  # YOUR CODE HERE
             # Calculate the SHA1 hash of the bencoded data using 'hashlib.sha1()'.
+            sha1_hash = None  # YOUR CODE HERE
             # Get the digest of the hash using '.digest()'.
             # Assign the resulting bytes object to the 'info_hash' variable.
-            bencoded_info = bencodepy.encode(info_dict)
-            sha1_hash = hashlib.sha1(bencoded_info)
-            info_hash = sha1_hash.digest()
+            info_hash = None  # YOUR CODE HERE
 
         # --- Task 1.3: Extract the tracker URL ---
         # The tracker URL is associated with the key 'b"announce"'.
         # Decode the byte string value associated with 'b"announce"' from 'torrent_data' to a UTF-8 string.
-        # Assign the resulting string to the 'tracker_url' variable.
-        announce_bytes = torrent_data.get(b"announce")
+        # Assign the resulting string to the 'tracker_url' variable. Ensure you decode using 'utf-8' encoding.
+        announce_bytes = None
+        # YOUR CODE HERE
         if announce_bytes:
-            tracker_url = announce_bytes.decode("utf-8")
+            tracker_url = None
+            # YOUR CODE HERE
 
     except FileNotFoundError:
         print(f"Error: Torrent file not found at {file_path}")
