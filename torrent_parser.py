@@ -62,11 +62,20 @@ def parse_torrent(file_path: str) -> Tuple[Optional[str], Optional[bytes]]:
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
+    if info_dict is None:
+        raise NotImplementedError("Task 1.1: Extracting the 'info' dictionary is not implemented.")
+    if info_hash is None:
+        raise NotImplementedError("Task 1.2: Calculating the info hash is not fully implemented.")
+    if tracker_url is None:
+        raise NotImplementedError("Task 1.3: Extracting the tracker URL is not implemented.")
+
     return tracker_url, info_hash
 
 
 if __name__ == "__main__":
-    torrent_file = "ubuntu-24.04.2-desktop-amd64.iso.torrent"
+    torrent_file = None
+    if torrent_file is None:
+        raise NotImplementedError("Specify a local .torrent file")
     tracker_url, info_hash = parse_torrent(torrent_file)
 
     if tracker_url and info_hash:
