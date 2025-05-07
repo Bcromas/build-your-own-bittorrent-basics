@@ -53,39 +53,32 @@ async def request_piece(
         # <length_prefix><message_id><index><begin><length>
         # - length_prefix: 4 bytes, integer, big-endian. The length of the remaining payload (13).
         # - message_id: 1 byte, integer. The message ID for 'request' is 6.
-        # - index: 4 bytes, integer, big-endian. The index of the piece being requested.
+        # - index: 4 bytes, integer, big-endian. The index of the piece being requested (use the 'piece_index' function argument).
         # - begin: 4 bytes, integer, big-endian. The starting offset within the piece (always 0 for simplicity).
         # - length: 4 bytes, integer, big-endian. The length of the block being requested (16384 for simplicity).
         # Construct the 'request_msg' by concatenating these components.
-        # Use .to_bytes(4, byteorder='big') to convert integers to bytes.
+        # Remember to convert integers to bytes using .to_bytes(4, byteorder='big') for multi-byte fields and .to_bytes(1, byteorder='big') for the message ID.
         # Assign the resulting bytes object to the 'request_msg' variable.
-
-        length_prefix = (13).to_bytes(4, byteorder="big")
-        message_id = (6).to_bytes(1, byteorder="big")
-        offset = (0).to_bytes(4, byteorder="big")
-        block_length = (16384).to_bytes(4, byteorder="big")
-
-        request_msg = (
-            length_prefix
-            + message_id
-            + piece_index.to_bytes(4, byteorder="big")
-            + offset
-            + block_length
-        )
+        length_prefix = None # YOUR CODE HERE
+        message_id = None # YOUR CODE HERE
+        begin = None # YOUR CODE HERE
+        length = None # YOUR CODE HERE
+        request_msg = None # YOUR CODE HERE
+        if request_msg is None:
+            raise NotImplementedError("Task 4.1: Constructing the 'request' message is not implemented.")
 
         writer.write(request_msg)
         await writer.drain()
 
-        # Use piece_prefix_timeout
         try:
             # --- Task 4.2: Read the 'piece' message prefix ---
             # The 'piece' message starts with a 4-byte length prefix,
             # followed by the message ID (7), the piece index, and the begin offset.
             # Read the first 4 bytes from the reader to get the length prefix.
             # Assign the result to 'response_prefix'.
-            response_prefix = await asyncio.wait_for(
-                reader.read(4), timeout=piece_prefix_timeout
-            )
+            response_prefix = None # YOUR CODE HERE
+            if response_prefix is None:
+                raise NotImplementedError("Task 4.2: Reading the 'piece' message prefix is not implemented.")
         except asyncio.TimeoutError:
             print(
                 f"Timeout waiting for piece data prefix from {reader.get_extra_info('peername')} after {piece_prefix_timeout} seconds"
@@ -106,9 +99,9 @@ async def request_piece(
             # Read the remaining bytes of the 'piece' message, which is the actual piece data.
             # The length of the piece data is 'message_length - 9' (1 for message ID, 4 for piece index, 4 for begin offset).
             # Read 'message_length - 9' bytes from the reader and assign the result to 'piece_data'.
-            piece_data = await asyncio.wait_for(
-                reader.read(message_length - 9), timeout=piece_data_timeout
-            )
+            piece_data = None # YOUR CODE HERE
+            if piece_data is None:
+                raise NotImplementedError("Task 4.3: Reading the piece data is not implemented.")
         except asyncio.TimeoutError:
             print(
                 f"Timeout waiting for full piece data from {reader.get_extra_info('peername')} after {piece_data_timeout} seconds"
@@ -155,7 +148,7 @@ async def main():
     Main function to orchestrate peer connection and piece download.
     """
     torrent_file = (
-        "ubuntu-24.04.2-desktop-amd64.iso.torrent"  # Replace with your torrent file
+        "example.torrent"  # Replace with the path to your .torrent file
     )
     tracker_url, info_hash = parse_torrent(torrent_file)
     peer_list = get_peers(tracker_url, info_hash)
