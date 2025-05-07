@@ -18,8 +18,8 @@ def parse_torrent(file_path: str) -> Tuple[Optional[str], Optional[bytes]]:
         Returns (None, None) if the file is not found, cannot be decoded,
         or if essential keys are missing.
     """
-    tracker_url = None  # Initialize tracker_url
-    info_hash = None  # Initialize info_hash
+    tracker_url = None  # Initialize tracker_url as None
+    info_hash = None  # Initialize info_hash as None
 
     try:
         with open(file_path, "rb") as f:

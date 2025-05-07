@@ -22,10 +22,10 @@ def get_peers(tracker_url: str, info_hash: bytes) -> list[Tuple[str, int]]:
               and port (integer) of a peer. Returns an empty list if an error occurs
               or no peers are found.
     """
-    peer_id = None  # Initialize peer_id
-    params = None  # Initialize params
-    response = None  # Initialize response
-    peer_list = []  # Initialize peer_list
+    peer_id = None  # Initialize peer_id as None
+    params = None  # Initialize params as None
+    response = None  # Initialize response as None
+    peer_list = []  # Initialize peer_list as empty list
 
     # --- Task 2.1: Generate a unique peer ID ---
     # The peer ID is a 20-byte string that identifies this client to the tracker and peers.
