@@ -33,7 +33,10 @@ def get_peers(tracker_url: str, info_hash: bytes) -> list[Tuple[str, int]]:
     # Append 12 random hexadecimal characters (0-9, A-F) to this identifier to make it unique.
     # Assign the generated 20-byte peer ID (as a string) to the 'peer_id' variable.
     # Hint: Use 'random.choices' and string concatenation.
-    peer_id = "-PYEXERCISE-" + "".join(random.choices("0123456789ABCDEF", k=12))
+    peer_id = None # YOUR CODE HERE
+    if peer_id is None:
+        raise NotImplementedError("Task 2.1: Generating the peer ID is not implemented.")
+
 
     # --- Task 2.2: Construct the request parameters ---
     # The tracker URL requires specific parameters to be sent in the GET request.
@@ -46,22 +49,18 @@ def get_peers(tracker_url: str, info_hash: bytes) -> list[Tuple[str, int]]:
     #   - "left": The number of bytes remaining to download (for simplicity, start with 0).
     #   - "compact": Set to 1 to receive a compact list of peers.
     # Assign this dictionary to the 'params' variable.
-    params = {
-        "info_hash": info_hash,
-        "peer_id": peer_id.encode(),
-        "port": 6881,
-        "uploaded": 0,
-        "downloaded": 0,
-        "left": 0,
-        "compact": 1,
-    }
+    params = None # YOUR CODE HERE
+    if params is None:
+        raise NotImplementedError("Task 2.2: Constructing the request parameters is not implemented.")
 
     try:
         # --- Task 2.3: Make the GET request to the tracker ---
         # Use the 'requests.get()' function to send a GET request to the 'tracker_url'
         # with the 'params' dictionary.
         # Assign the response object to the 'response' variable.
-        response = requests.get(tracker_url, params=params)
+        response = None # YOUR CODE HERE
+        if response is None:
+            raise NotImplementedError("Task 2.3: Making the GET request is not implemented.")
 
         # --- Task 2.4: Extract the peer list from the response ---
         # The tracker's response (in 'response.content') contains a compact list of peers.
@@ -73,14 +72,12 @@ def get_peers(tracker_url: str, info_hash: bytes) -> list[Tuple[str, int]]:
         #   - Extract the last 2 bytes and convert them to an integer representing the port.
         #     Hint: Use 'int.from_bytes(..., byteorder="big")'.
         #   - Append a tuple of (ip, port) to the 'peer_list'.
-        peers = response.content
+        peers = None # YOUR CODE HERE
+        if peers is None:
+            raise NotImplementedError("Task 2.4: Accessing the tracker response content is not implemented.")
+        
         peer_list = []
-        for i in range(0, len(peers), 6):
-            ip_bytes = peers[i : i + 4]
-            port_bytes = peers[i + 4 : i + 6]
-            ip = ".".join(map(str, ip_bytes))
-            port = int.from_bytes(port_bytes, byteorder="big")
-            peer_list.append((ip, port))
+        # YOUR CODE HERE
 
         print("Peers:", peer_list)
 
@@ -95,7 +92,7 @@ def get_peers(tracker_url: str, info_hash: bytes) -> list[Tuple[str, int]]:
 
 
 if __name__ == "__main__":
-    torrent_file = "ubuntu-24.04.2-desktop-amd64.iso.torrent"
+    torrent_file = "example.torrent"  # Replace with the path to your .torrent file
     tracker_url, info_hash = parse_torrent(torrent_file)
     if tracker_url and info_hash:
         peer_list = get_peers(tracker_url, info_hash)
@@ -103,3 +100,5 @@ if __name__ == "__main__":
             print("Found", len(peer_list), "peers.")
         else:
             print("No peers found.")
+    else:
+        print("Error parsing torrent file. Cannot proceed to get peers.")
