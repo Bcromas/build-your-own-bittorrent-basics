@@ -1,6 +1,11 @@
 # build-your-own-bittorrent-basics
 This repository guides you through the implementation of some basic BitTorrent functionality: parsing torrent metadata, communicating with trackers for peer discovery, establishing peer connections via handshakes, and downloading data pieces.
 
+**This repository contains two branches:**
+
+* **`exercise`**: This is the branch you should work in. It contains the initial file structure and prompts to guide your implementation.
+* **`solution`**: This branch provides a complete, functional example of the BitTorrent basics implemented in this repository. You can refer to this branch if you get stuck or want to see how the code should work.
+
 ## Setup Instructions
 ### Install Python
 Ensure Python 3.6+ is installed on your machine. You can download the latest version from the official Python website (https://www.python.org/downloads/).
