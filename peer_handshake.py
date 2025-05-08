@@ -43,19 +43,24 @@ async def perform_handshake(
         Returns None if the connection fails, the handshake times out, or the
         info hashes do not match.
     """
-    reader: Optional[asyncio.StreamReader] = None
-    writer: Optional[asyncio.StreamWriter] = None
-    sock: Optional[socket.socket] = None
+    reader: Optional[asyncio.StreamReader] = None # Initialize reader as None
+    writer: Optional[asyncio.StreamWriter] = None # Initialize writer as None
+    sock: Optional[socket.socket] = None # Initialize sock as None
 
     try:
         print(f"Attempting handshake with {peer_ip}:{peer_port}")
 
-        # Create socket
+        # --- Task 3.1: Create a TCP socket ---
+        # Create a socket object using socket.socket() for IPv4 (AF_INET) and TCP (SOCK_STREAM).
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if sock is None:
+            raise NotImplementedError("Task 3.1: Creating the TCP socket is not implemented.")
         sock.settimeout(connect_timeout)
         print("Socket created.")
 
-        # Attempt connection
+        # --- Task 3.2: Connect to the peer ---
+        # Use asyncio.get_event_loop().sock_connect() to asynchronously connect the socket
+        # to the peer's IP address and port.
         try:
             await asyncio.get_event_loop().sock_connect(sock, (peer_ip, peer_port))
             print("Socket connected.")
@@ -63,19 +68,27 @@ async def perform_handshake(
             print(f"Socket connect error: {e}")
             return None, None
 
-        # Open asyncio streams
-        try:
-            reader, writer = await asyncio.open_connection(sock=sock)
-            print("asyncio connection opened.")
-        except Exception as e:
-            print(f"asyncio.open_connection error: {e}")
-            return None, None
+        # --- Task 3.3: Open asyncio streams ---
+        # Use asyncio.open_connection() with the socket to get asyncio StreamReader and StreamWriter.
+        reader, writer = await asyncio.open_connection(sock=sock)
+        if reader is None or writer is None:
+            raise NotImplementedError("Task 3.3: Opening asyncio connection is not fully implemented.")
+        print("asyncio connection opened.")
 
+        # --- Task 3.4: Construct the handshake message ---
+        # The handshake message is 68 bytes long and has the following structure:
+        # 1 byte: length of the protocol string (19 for "BitTorrent protocol")
+        # 19 bytes: protocol string "BitTorrent protocol"
+        # 8 bytes: reserved bytes (all zeros for basic clients)
+        # 20 bytes: info hash of the torrent
+        # 20 bytes: peer ID (generate a unique one starting with "-PYEXERCISE-")
         protocol_name = b"BitTorrent protocol"
         reserved_bytes = bytes(8)
         peer_id = b"-PYEXERCISE-" + "".join(
             random.choices("0123456789ABCDEF", k=12)
         ).encode("ascii")
+        if peer_id is None or len(peer_id) != 20:
+            raise NotImplementedError("Task 3.4: Generating the peer ID is not fully implemented or incorrect length.")
 
         handshake_msg = (
             len(protocol_name).to_bytes(1, byteorder="big")
@@ -89,7 +102,13 @@ async def perform_handshake(
         writer.write(handshake_msg)
         await writer.drain()
 
+        # --- Task 3.5: Receive and verify the handshake response ---
+        # Read 68 bytes from the peer using asyncio.wait_for() with the handshake_timeout.
+        # Verify that the received response is 68 bytes long and that the info hash (bytes 28-47)
+        # matches the 'info_hash' we sent.
         response = await asyncio.wait_for(reader.read(68), timeout=handshake_timeout)
+        if response is None:
+            raise NotImplementedError("Task 3.5: Receiving the handshake response is not implemented.")
 
         if response and len(response) == 68 and response[28:48] == info_hash:
             print(f"Handshake successful with {peer_ip}:{peer_port}")
@@ -134,6 +153,10 @@ async def main():
     """
     torrent_file = "ubuntu-24.04.2-desktop-amd64.iso.torrent"
     tracker_url, info_hash = parse_torrent(torrent_file)
+    if tracker_url is None or info_hash is None:
+        print("Error parsing torrent file. Cannot proceed with handshake.")
+        return
+
     peer_list = get_peers(tracker_url, info_hash)
 
     if peer_list:
