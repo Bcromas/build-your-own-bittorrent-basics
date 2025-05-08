@@ -22,19 +22,27 @@ async def main():
     torrent_file = (
         "ubuntu-24.04.2-desktop-amd64.iso.torrent"  # Replace with your torrent file
     )
-    tracker_url: Optional[str] = None
-    info_hash: Optional[bytes] = None
-    peer_list: list[tuple[str, int]] = []
+    tracker_url: Optional[str] = None # Initialize tracker_url as None
+    info_hash: Optional[bytes] = None # Initialize info_hash as None
+    peer_list: list[tuple[str, int]] = [] # Initialize peer_list as None
 
-    # Task 6.1: Parse the torrent file
+    # Task 5.1: Parse the torrent file
+    # Use the 'parse_torrent' function to extract the tracker URL and info hash from the 'torrent_file'.
+    # Assign the returned values to the 'tracker_url' and 'info_hash' variables.
     tracker_url, info_hash = parse_torrent(torrent_file)
+    if tracker_url is None or info_hash is None:
+        raise NotImplementedError("Task 5.1: Parsing the torrent file is not implemented.")
 
     if tracker_url and info_hash:
         print(f"Tracker URL: {tracker_url}")
         print(f"Info Hash: {info_hash.hex()}")
 
-        # Task 6.2: Get peers from the tracker
+        # Task 5.2: Get peers from the tracker
+        # Use the 'get_peers' function with the 'tracker_url' and 'info_hash' to retrieve a list of peers.
+        # Assign the returned list to the 'peer_list' variable.
         peer_list = get_peers(tracker_url, info_hash)
+        if peer_list is None:
+            raise NotImplementedError("Task 5.2: Getting peers from the tracker is not implemented.")
         if peer_list:
             print(f"Found {len(peer_list)} peers.")
             random.shuffle(peer_list)
@@ -43,13 +51,13 @@ async def main():
                 if MAX_PEER_CONNECTIONS == -1
                 else min(MAX_PEER_CONNECTIONS, len(peer_list))
             )
-            downloaded_piece: Optional[bytes] = None
+            downloaded_piece: Optional[bytes] = None # Initialize downloaded_piece as None
 
-            # Task 6.3: Iterate through peers and attempt handshake/download
+            # Task 5.3: Iterate through peers and attempt handshake/download
             for i in range(peers_to_try):
                 peer_ip, peer_port = peer_list[i]
-                reader: Optional[asyncio.StreamReader] = None
-                writer: Optional[asyncio.StreamWriter] = None
+                reader: Optional[asyncio.StreamReader] = None # Initialize reader as None
+                writer: Optional[asyncio.StreamWriter] = None # Initialize writer as None
 
                 try:
                     print(
@@ -62,6 +70,10 @@ async def main():
                     if handshake_result:
                         reader, writer = handshake_result
                         print(f"Handshake successful with {peer_ip}:{peer_port}")
+                        
+                        # Attempt to download the first piece (index 0) using the 'request_piece' function.
+                        # Pass the 'reader', 'writer', and 'piece_index=0'.
+                        # Assign the downloaded piece data (or None) to the 'piece' variable.
                         piece = await request_piece(reader, writer, piece_index=0)
                         if piece:
                             print(
