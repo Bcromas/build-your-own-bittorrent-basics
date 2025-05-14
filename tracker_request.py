@@ -33,7 +33,7 @@ def get_peers(tracker_url: str, info_hash: bytes) -> list[Tuple[str, int]]:
     # Append 12 random hexadecimal characters (0-9, A-F) to this identifier to make it unique.
     # Assign the generated 20-byte peer ID (as a string) to the 'peer_id' variable.
     # Hint: Use 'random.choices' and string concatenation.
-    peer_id = "-PYEXERCISE-" + "".join(random.choices("0123456789ABCDEF", k=12))
+    peer_id = "-PYEXERCISE-" + "".join(random.choices("0123456789ABCDEF", k=8))
     if peer_id is None:
         raise NotImplementedError("Task 2.1: Generating the peer ID is not implemented.")
 

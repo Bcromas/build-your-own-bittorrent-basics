@@ -85,7 +85,7 @@ async def perform_handshake(
         protocol_name = b"BitTorrent protocol"
         reserved_bytes = bytes(8)
         peer_id = b"-PYEXERCISE-" + "".join(
-            random.choices("0123456789ABCDEF", k=12)
+            random.choices("0123456789ABCDEF", k=8)
         ).encode("ascii")
         if peer_id is None or len(peer_id) != 20:
             raise NotImplementedError("Task 3.4: Generating the peer ID is not fully implemented or incorrect length.")
